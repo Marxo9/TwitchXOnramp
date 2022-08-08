@@ -1,0 +1,118 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 --Optimization Problem\
+/*\
+1.Total Sales (Pricepaid*qtysold) per month by event, venue, and caategory \
+\
+2. Ordered ascending by month and then descending by sales for each other dimension  ( category, venue, event).\
+\
+3. I want to also see columns that show the rank for each of the three sub dimensions (category, venue, event)\
+\
+4. I want to see running total sales by each dimension (month, category, venue, event).  E.g. RT sales for each event in a venue, then RT for each category for all venues/events, etc.\
+\
+5. Also want to see the % difference from one \'91category\'92 to the next per month.  So for example in January, if the NHL has the highest sales, and NBA has the second highest, what is the %difference between NHL and NBA sales in January?\
+\
+6.All in one table output\
+\
+*/\
+\
+\
+--layout may change as I find methods to aquire idivdual columns \
+-- get all data first then optimize\
+\
+SELECT  date.caldate,\
+        month,\
+        catname,\
+        --rank of catname partion month\
+        venuename,\
+        -- rank venuename partion month\
+		eventname, \
+        --rank eventvenue partition ??\
+        (sales.pricepaid * sales.qtysold) as Total_Sales\
+        --rt's here\
+        \
+\
+FROM sales\
+\
+INNER JOIN date on sales.dateid = date.dateid -- date of sale not event\
+INNER JOIN event on sales.eventid = event.eventid\
+INNER JOIN venue on event.venueid = venue.venueid\
+INNER JOIN category on event.catid = category.catid\
+\
+ORDER BY date.caldate ASC,\
+		 Total_Sales DESC\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\'97 get category rt\
+\
+SELECT (sales.qtysold * sales.pricepaid) AS total_sales,\
+	   month,\
+       catname,\
+	   sum(total_sales) OVER (PARTITION BY category.catid order by caldate rows unbounded preceding) AS RT\
+\
+FROM sales\
+INNER JOIN event on event.eventid = sales.salesid\
+INNER JOIN date on event.dateid = date.dateid\
+INNER JOIN category on event.catid = category.catid\
+\
+\
+ORDER BY EXTRACT(MONTH FROM caldate) asc,\
+		 rt asc\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+-- rt by month\
+\
+SELECT month,\
+	   (sales.qtysold * sales.pricepaid) as Sales,\
+       sum(Sales) OVER (PARTITION BY month order by caldate rows unbounded preceding) AS RT\
+	   \
+FROM sales\
+INNER JOIN date ON sales.dateid = date.dateid\
+ORDER BY extract(month from caldate) asc,\
+	      RT asc\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+-- GET VENUE RUNNING TOTAL\
+\
+SELECT (sales.qtysold * sales.pricepaid) AS total_sales,\
+	   month,\
+       venuename,\
+	   sum(total_sales) OVER (PARTITION BY venue.venueid order by caldate rows unbounded preceding) AS RT\
+\
+FROM sales\
+INNER JOIN event on event.eventid = sales.salesid\
+INNER JOIN date on event.dateid = date.dateid\
+INNER JOIN venue on event.venueid = venue.venueid\
+\
+\
+ORDER BY EXTRACT(MONTH FROM caldate) asc,\
+		 rt asc\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\
+--get running total for event\
+\
+WITH event_data(total_sales, event_date, event_id, eventname) AS (\
+  SELECT sales.qtysold * sales.pricepaid AS total_sales,\
+	     date.caldate AS event_date,\
+  	  	 event.eventid,\
+  		 sum(total_sales) OVER (PARTITION BY \
+  		 eventname\
+  \
+       \
+  FROM event\
+\
+  INNER JOIN sales on sales.eventid = event.eventid\
+  INNER JOIN date on event.dateid = date.dateid -- date of event\
+\
+  ORDER BY date.caldate ASC\
+)\
+SELECT *,\
+	   sum(total_sales) OVER (PARTITION BY ??) AS RT\
+\
+FROM event_data\
+ORDER BY event_date asc;\
+\
+\'97for the one above I had tried something different when I started and this slowly helped me get the other ones if that makes sense}
